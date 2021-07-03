@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
-#include <time.h>
 
 // Disable clangd deprecation warnings
 #ifdef __clang__
@@ -16,12 +15,11 @@
 #define putchar_unlocked(x) _putchar_nolock(x)
 #endif
 
+typedef uint8_t u8;
 typedef uint32_t u32;
 typedef uint64_t u64;
-typedef int32_t i32;
-typedef int64_t i64;
 
-// Redirect stdio to read from file
+// Redirect input.txt to stdin and stdout to output.txt
 #define STDIO_REDIRECT
 
 // Use a faster method for reading input
@@ -55,14 +53,14 @@ void ReadMatrixOld(u32 size, u32 matrix[size][size]) {
   u32 i, j;
   for (i = 0; i < size; i++) {
     for (j = 0; j < size - 1; j++) {
-      scanf("%d,", &matrix[i][j]);
+      assert(scanf("%d,", &matrix[i][j]) > 0);
     }
-    scanf("%d", &matrix[i][j]);
+    assert(scanf("%d", &matrix[i][j]) > 0);
   }
 }
 
 // Faster alternative using getchar_unlocked()
-// This implementation is 3 times faster than the scanf() one
+// This implementation is ~3x faster than the scanf() one
 void ReadMatrix(u32 size, u32 matrix[size][size]) {
   char c;
   u32 i, j, value;
@@ -199,17 +197,55 @@ void HeapInsert(Heap *heap, u32 maxSize, Graph entry) {
 }
 /*----------------------------------------- end of Heap -----------------------------------------*/
 
+/*
+---------------------------------------------------------------------------------------------------
+ Score computation methods
+---------------------------------------------------------------------------------------------------
+*/
 // Compute the score of a graph based on project metrics
 u32 ComputeScore(u32 graphSize, u32 graph[graphSize][graphSize]) {
-  return (u32) clock(); // stubbed
+  u32 score = 0;
+
+  u32 i, minDistance, current = 0;
+  u32 distances[graphSize];
+  u8 visited[graphSize];
+
+  // Set up working arrays
+  memset(visited, 0, sizeof(visited));
+  memset(distances, UINT32_MAX, sizeof(distances));
+  distances[0] = 0;
+
+  // Dijkstra algorithm
+  for(;;) {
+    // Find minimum distance path
+    for(minDistance = UINT32_MAX, i = 0; i < graphSize; i++)
+      if (!visited[i] && distances[i] <= minDistance)
+        minDistance = distances[current = i];
+    
+    visited[current] = 1;
+    
+    if (current >= graphSize || minDistance == UINT32_MAX)
+      break;
+    
+    // Update path lengths for reachable nodes from the current node
+    for(i = 0; i < graphSize; i++)
+      if (graph[current][i] && distances[i] > distances[current] + graph[current][i])
+        distances[i] = distances[current] + graph[current][i];
+  }
+
+  for (i = 1; i < graphSize; i++) {
+    // Skip infinite (UINT32_MAX) path lengths
+    score += distances[i] * !(distances[i] == UINT32_MAX);
+  }
+  return score;
 }
+/*----------------------------------------- end of Score ----------------------------------------*/
 
 /*
 ---------------------------------------------------------------------------------------------------
- Commands functions
+ Commands methods
 ---------------------------------------------------------------------------------------------------
 */
-
 // "AggiungiGrafo"
 void AddGraph(Context *ctx) {
   u32 newGraph[ctx->graphSize][ctx->graphSize];
@@ -217,22 +253,24 @@ void AddGraph(Context *ctx) {
   #ifdef FAST_IO
   ReadMatrix(ctx->graphSize, newGraph);
   #else
-  ReadMatrixOld(graphSize, newGraph);
+  ReadMatrixOld(ctx->graphSize, newGraph);
   #endif
 
   u32 score = ComputeScore(ctx->graphSize, newGraph);
 
-  Graph entry = {ctx->count, score};
+  Graph entry = {ctx->count++, score};
   HeapInsert(ctx->ranking, ctx->rankingSize, entry);
 }
 
 // "TopK"
 void TopK(Context *ctx) {
   #define heap ctx->ranking
-  u32 size = heap->size < ctx->rankingSize ? heap->size + 1 : ctx->rankingSize;
+  u32 size = heap->size < ctx->rankingSize ? heap->size : ctx->rankingSize;
+  size++;
+  
   const char *format = "%d";
   for (u32 i = 1; i < size; i++) {
-    printf(format, heap->data[i].index);
+    assert(printf(format, heap->data[i].index) > 0);
     format = " %d";
   }
   putchar_unlocked('\n');
@@ -240,24 +278,24 @@ void TopK(Context *ctx) {
 }
 /*--------------------------------------- end of Commands ---------------------------------------*/
 
+#ifndef UNIT_TEST
 int main(int argc, char **argv) {
   #ifdef STDIO_REDIRECT
-  freopen("input.txt", "r", stdin);
-  freopen("output.txt", "w", stdout);
+  assert(freopen("input.txt", "r", stdin) != NULL);
+  assert(freopen("output.txt", "w", stdout) != NULL);
   #endif
 
   Context ctx = {0, 0, 0, NULL};
-  scanf("%u %u", &ctx.graphSize, &ctx.rankingSize);
+  assert(scanf("%u %u", &ctx.graphSize, &ctx.rankingSize) > 1);
   
   ctx.ranking = HeapCreate(ctx.rankingSize);
 
   char command[14];
   while (!feof(stdin)) {
-    scanf("%s\n", command);
+    assert(scanf("%s\n", command) > 0);
 
     if (!strcmp(command, ADD_GRAPH)) {
       AddGraph(&ctx);
-      ctx.count++;
     }
     else if (!strcmp(command, TOP_K)) {
       TopK(&ctx);
@@ -267,3 +305,4 @@ int main(int argc, char **argv) {
   HeapDestroy(ctx.ranking);
   return 0;
 }
+#endif

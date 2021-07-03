@@ -2,9 +2,15 @@ cmake_minimum_required(VERSION 3.16)
 
 project(graph-ranker)
 
-set(C_STANDARD 11)
-set(C_STANDARD_REQUIRED True)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED True)
+set(all_targets
+  Main
+  Test)
 
 add_executable(Main main.c)
+add_executable(Test test.c)
 
-target_compile_options(Main PRIVATE -DEVAL -Wall -Werror -O2 -pipe -static -s -lm)
+foreach(TARGET ${all_targets})
+  target_compile_options(${TARGET} PUBLIC -DEVAL -Wall -Werror -O2 -pipe -static -s -lm)
+endforeach(TARGET)
