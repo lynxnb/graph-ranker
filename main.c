@@ -280,7 +280,7 @@ void TopK(Context *ctx) {
 
 #ifndef UNIT_TEST
 int main(int argc, char **argv) {
-  #ifdef STDIO_REDIRECT
+  #if defined(STDIO_REDIRECT) && !defined(EVAL)
   assert(freopen("input.txt", "r", stdin) != NULL);
   assert(freopen("output.txt", "w", stdout) != NULL);
   #endif
