@@ -98,8 +98,6 @@ static inline void Swap(Graph *a, Graph *b) {
 
 static inline u32 LeftChild(u32 pos) { return 2 * pos; }
 
-static inline u32 RightChild(u32 pos) { return 2 * pos + 1; }
-
 static inline u32 Parent(u32 pos) { return pos / 2; }
 // ] utils
 
@@ -128,7 +126,7 @@ void HeapDestroy(Heap *heap) {
 void HeapSiftUp(Heap *heap, u32 index) {
   u32 parent = Parent(index);
 
-  if (!(parent < HEAP_ROOT) && heap->data[parent].score < heap->data[index].score) {
+  if (parent >= HEAP_ROOT && heap->data[parent].score < heap->data[index].score) {
     Swap(&heap->data[index], &heap->data[parent]);
     HeapSiftUp(heap, parent);
   }
@@ -136,20 +134,15 @@ void HeapSiftUp(Heap *heap, u32 index) {
 
 // Move a node down in the tree, recursively as long as needed; restore heap condition after deletion or replacement
 void HeapSiftDown(Heap *heap, u32 index) {
-  u32 left = LeftChild(index);
-  u32 right = RightChild(index);
-  u32 largest;
+  u32 childpos = LeftChild(index);
+  u32 rightpos = childpos + 1;
 
-  if (left < heap->size && heap->data[left].score > heap->data[index].score)
-    largest = left;
-  else
-    largest = index;
-  if (right < heap->size && heap->data[right].score > heap->data[largest].score)
-    largest = right;
+  if (childpos < heap->size && heap->data[rightpos].score > heap->data[childpos].score)
+    childpos = rightpos;
 
-  if (largest != index) {
-    Swap(&heap->data[index], &heap->data[largest]);
-    HeapSiftDown(heap, largest);
+  if (childpos <= heap->size && heap->data[childpos].score > heap->data[index].score) {
+    Swap(&heap->data[index], &heap->data[childpos]);
+    HeapSiftDown(heap, childpos);
   }
 }
 
