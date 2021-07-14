@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <assert.h>
 
-// Disable clangd deprecation warnings
 #ifdef __clang__
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations" // Disable clangd deprecation warnings from MSVC
+#elif __GNUC__
+#pragma GCC diagnostic ignored "-Wunused-result" // Disable GCC unused function return values warnings
 #endif
 
 // getchar_unlocked() is a POSIX function, Win32 has it under a different name so make them match
@@ -45,42 +45,42 @@ typedef struct Context_s {
 } Context;
 
 /*
----------------------------------------------------------------------------------------------------
+------------
  IO methods
----------------------------------------------------------------------------------------------------
+------------
 */
+
 void ReadMatrixOld(u32 size, u32 matrix[size][size]) {
   u32 i, j;
   for (i = 0; i < size; i++) {
     for (j = 0; j < size - 1; j++) {
-      assert(scanf("%d,", &matrix[i][j]) > 0);
+      scanf("%d,", &matrix[i][j]);
     }
-    assert(scanf("%d", &matrix[i][j]) > 0);
+    scanf("%d", &matrix[i][j]);
   }
 }
 
-// Faster alternative using getchar_unlocked()
+// Faster method using getchar_unlocked()
 // This implementation is ~3x faster than the scanf() one
 void ReadMatrix(u32 size, u32 matrix[size][size]) {
   char c;
   u32 i, j, value;
   for (i = 0; i < size; i++) {
     for (j = 0; j < size; j++) {
-      for (c = getchar_unlocked(), value = 0; c != ',' && c != '\n'; c = getchar_unlocked()) {
+      for (c = getchar_unlocked(), value = 0; c != ',' && c != '\n'; c = getchar_unlocked())
         value = value * 10 + c - 48;
-      }
       matrix[i][j] = value;
     }
   }
 }
-/*------------------------------------------ end of IO ------------------------------------------*/
+// ] IO
 
 /*
----------------------------------------------------------------------------------------------------
- Heap methods
- Fixed size array-based Max-Heap implementation with unused 0th position, root node is at index 1
- Allows for quicker child/parent indexes calculations
----------------------------------------------------------------------------------------------------
+--------------------------------------------------------------
+ Heap methods: fixed-size array-based Max-Heap implementation
+ with unused 0th position (root node is at index 1), which
+ allows for quicker child/parent indexes calculations
+--------------------------------------------------------------
 */
 #define HEAP_ROOT 1
 
@@ -104,14 +104,17 @@ static inline u32 Parent(u32 pos) { return pos / 2; }
 // Create a new heap, allocating an array of size `maxSize`
 Heap *HeapCreate(u32 maxSize) {
   Heap *newHeap = (Heap *) malloc(sizeof(Heap));
-  // Make sure memory has been allocated or bad stuff will happen, not fun
-  assert(newHeap != NULL);
+  if (newHeap == NULL)
+    return newHeap;
 
   newHeap->size = 0;
   // Using an heap implementation where index 0 is unused, need one more byte
   newHeap->data = (Graph *) malloc((maxSize + 1) * sizeof(Graph));
-  // See above
-  assert(newHeap->data != NULL);
+  // Make sure memory has been allocated for the array
+  if (newHeap->data == NULL) {
+    free(newHeap);
+    newHeap = NULL;
+  }
 
   return newHeap;
 }
@@ -180,21 +183,21 @@ void HeapReplace(Heap *heap, Graph entry) {
 // when the heap is not full HeapPush() is used
 // when the heap is full HeapReplace() is used if conditions are met
 void HeapInsert(Heap *heap, u32 maxSize, Graph entry) {
-  if (heap->size < maxSize) {
+  if (heap->size < maxSize)
     HeapPush(heap, entry);
-  }
-  else {
+  else
     if (entry.score < heap->data[HEAP_ROOT].score)
       HeapReplace(heap, entry);
-  }
 }
-/*----------------------------------------- end of Heap -----------------------------------------*/
+// ] Heap
 
 /*
----------------------------------------------------------------------------------------------------
- Score computation methods
----------------------------------------------------------------------------------------------------
+---------------------------------------------------------------
+ Score computation methods: the score of a graph is calculated 
+ using the Dijkstra algorithm from node 0 to every other node
+---------------------------------------------------------------
 */
+
 // Compute the score of a graph based on project metrics
 u32 ComputeScore(u32 graphSize, u32 graph[graphSize][graphSize]) {
   u32 score = 0;
@@ -232,13 +235,14 @@ u32 ComputeScore(u32 graphSize, u32 graph[graphSize][graphSize]) {
   }
   return score;
 }
-/*----------------------------------------- end of Score ----------------------------------------*/
+// ] Score
 
 /*
----------------------------------------------------------------------------------------------------
+------------------
  Commands methods
----------------------------------------------------------------------------------------------------
+------------------
 */
+
 // "AggiungiGrafo"
 void AddGraph(Context *ctx) {
   u32 newGraph[ctx->graphSize][ctx->graphSize];
@@ -258,41 +262,42 @@ void AddGraph(Context *ctx) {
 // "TopK"
 void TopK(Context *ctx) {
   #define heap ctx->ranking
-  u32 size = heap->size < ctx->rankingSize ? heap->size : ctx->rankingSize;
-  size++;
+  u32 end = heap->size + 1;
   
   const char *format = "%d";
-  for (u32 i = 1; i < size; i++) {
-    assert(printf(format, heap->data[i].index) > 0);
+  for (u32 i = 1; i < end; i++) {
+    printf(format, heap->data[i].index);
     format = " %d";
   }
   putchar_unlocked('\n');
   #undef heap
 }
-/*--------------------------------------- end of Commands ---------------------------------------*/
+// ] Commands
 
 #ifndef UNIT_TEST
 int main(int argc, char **argv) {
   #if defined(STDIO_REDIRECT) && !defined(EVAL)
-  assert(freopen("input.txt", "r", stdin) != NULL);
-  assert(freopen("output.txt", "w", stdout) != NULL);
+  freopen("input.txt", "r", stdin);
+  freopen("output.txt", "w", stdout);
   #endif
 
   Context ctx = {0, 0, 0, NULL};
-  assert(scanf("%u %u", &ctx.graphSize, &ctx.rankingSize) > 1);
+  scanf("%u %u", &ctx.graphSize, &ctx.rankingSize);
   
   ctx.ranking = HeapCreate(ctx.rankingSize);
+  if (ctx.ranking == NULL) {
+    fprintf(stderr, "Failed to allocate memory for the ranking.\n");
+    return 1;
+  }
 
   char command[14];
   while (!feof(stdin)) {
-    assert(scanf("%s\n", command) > 0);
+    scanf("%s\n", command);
 
-    if (!strcmp(command, ADD_GRAPH)) {
+    if (!strcmp(command, ADD_GRAPH))
       AddGraph(&ctx);
-    }
-    else if (!strcmp(command, TOP_K)) {
+    else if (!strcmp(command, TOP_K))
       TopK(&ctx);
-    }
   }
   
   HeapDestroy(ctx.ranking);

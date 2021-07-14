@@ -2,11 +2,11 @@
 #include "main.c"
 
 int main(int argc, char **argv) {
-  assert(freopen("test.in", "r", stdin) != NULL);
-  assert(freopen("test.out", "w", stdout) != NULL);
+  freopen("test.in", "r", stdin);
+  freopen("test.out", "w", stdout);
 
   u32 graphSize;
-  assert(scanf("%u\n", &graphSize) > 0);
+  scanf("%u\n", &graphSize);
 
   while (!feof(stdin)) {
     u32 graph[graphSize][graphSize];
