@@ -10,5 +10,6 @@ project(graph-ranker)
 
 add_executable(Main main.c)
 add_executable(Test test.c)
+add_executable(Debug main_debug.c)
 
 target_compile_options(Main PRIVATE -Wall -Werror -pipe -static -s -lm)

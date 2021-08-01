@@ -3,9 +3,10 @@
 #include <string.h>
 #include <stdint.h>
 
-#ifdef __clang__
+#if defined(__clang__) && defined(_MSC_VER)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations" // Disable clangd deprecation warnings from MSVC
-#elif __GNUC__
+#endif
+#ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wunused-result" // Disable GCC unused function return values warnings
 #endif
 
