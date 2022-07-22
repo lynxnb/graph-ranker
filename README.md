@@ -1,6 +1,8 @@
 # GraphRanker
 Individual project for _Algorithms and Principles of Computer Science_ course at [Politecnico di Milano](https://www.polimi.it/)
 
+Grade: 30/30 Cum Laude
+
 ## Project Assignment
 The assignment consists of writing a C program that manages a ranking of 
 [weighted](https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)#Weighted_graph) 
